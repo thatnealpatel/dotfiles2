@@ -59,9 +59,12 @@ setopt HIST_IGNORE_DUPS # duplicate not recorded
 setopt EXTENDED_HISTORY # timestamps for entries
 
 # aliases
-alias dotfiles="/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME"
-alias dgs="dotfiles status"
-alias dgc="dotfiles commit"
+alias dg="/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME"
+alias dgs="dg status"
+alias dgc="dg commit"
+
+alias gs="git status"
+alias gc="git commit"
 
 export GOPATH=$HOME/go
-export PATH=$PATH:$GOPATH/bin:$HOME/bin
+export PATH=$HOME/bin:$HOME/code/public/go/bin:$PATH:$HOME/go/bin
