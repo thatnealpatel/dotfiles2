@@ -1,5 +1,5 @@
 # Path to your oh-my-zsh installation.
-export ZSH="/Users/nealpatel/.oh-my-zsh"
+export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="papercolor"
 
 plugins=(
@@ -48,7 +48,7 @@ autoload -z edit-command-line
 zle -N edit-command-line
 bindkey "^V^V" edit-command-line
 
-source $HOME/.oh-my-zsh/custom/plugins/async/async.zsh
+#source $HOME/.oh-my-zsh/custom/plugins/async/async.zsh
 
 # history settings
 export HISTSIZE=20000 # general
@@ -66,5 +66,12 @@ alias dgc="dg commit"
 alias gs="git status"
 alias gc="git commit"
 
+# some .bashrc stuff
+alias la='ls -la'
+alias gs='git status'
+alias gc='git commit'
+
+
+export HOMEBREW_NO_ANALYTICS=1 # no homebrew analytics
 export GOPATH=$HOME/go
 export PATH=$HOME/bin:$HOME/code/public/go/bin:$PATH:$HOME/go/bin
