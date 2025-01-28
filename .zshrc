@@ -25,7 +25,7 @@ git_prompt() {
   BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/*\(.*\)/\1/')
 
   if [ ! -z $BRANCH ]; then
-    echo -n "%F{yellow}$BRANCH"
+    echo -n "%F{244}$BRANCH"
 
     if [[ $(pwd) == *quarantine* ]]; then
       echo -n " %F{red}INTERNAL"
@@ -39,6 +39,7 @@ git_prompt() {
   fi
 }
 PS1='
+%F{red}$HOST
 %F{blue}%~$(git_prompt)
 %F{244}%# %F{reset}'
 
