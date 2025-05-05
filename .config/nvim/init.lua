@@ -69,7 +69,10 @@ vim.opt.rtp:prepend(lazypath)
 --  You can also configure plugins after the setup call,
 --    as they will be available in your neovim runtime.
 require('lazy').setup({
-  -- NOTE: First, some plugins that don't require any configuration
+
+  change_detection = {
+    enabled = true
+  },
 
   -- Git related plugins
   'tpope/vim-fugitive',
@@ -77,6 +80,11 @@ require('lazy').setup({
 
   -- Detect tabstop and shiftwidth automatically
   --'tpope/vim-sleuth',
+
+  {
+    'NLKNguyen/papercolor-theme',
+    priority = 10000,
+  },
 
   -- NOTE: This is where your plugins related to LSP can be installed.
   --  The configuration is done below. Search for lspconfig to find it below.
@@ -133,29 +141,13 @@ require('lazy').setup({
       },
     },
   },
-
-  { -- Theme inspired by Atom
-    'navarasu/onedark.nvim',
-    priority = 999,
-    config = function()
-      vim.cmd.colorscheme 'onedark'
-    end,
-  },
-  { -- Favorite theme
-    'NLKNguyen/papercolor-theme',
-    priority = 1000,
-    config = function()
-      vim.cmd.colorscheme 'PaperColor'
-    end,
-  },
-
   { -- Set lualine as statusline
     'nvim-lualine/lualine.nvim',
     -- See `:help lualine.txt`
     opts = {
       options = {
         icons_enabled = false,
-        theme = 'onedark',
+        theme = 'PaperColor',
         component_separators = '|',
         section_separators = '',
       },
@@ -189,7 +181,6 @@ require('lazy').setup({
       return vim.fn.executable 'make' == 1
     end,
   },
-
   {
     'nvim-treesitter/nvim-treesitter',
     dependencies = {
@@ -213,21 +204,6 @@ require('lazy').setup({
     build = ':lua require("go.install").update_all_sync()' -- if you need to install/update all binaries
   },
 
-  -- NOTE: Next Step on Your Neovim Journey: Add/Configure additional "plugins" for kickstart
-  --       These are some example plugins that I've included in the kickstart repository.
-  --       Uncomment any of the lines below to enable them.
-  -- require 'kickstart.plugins.autoformat',
-  -- require 'kickstart.plugins.debug',
-
-  -- NOTE: The import below automatically adds your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
-  --    You can use this folder to prevent any conflicts with this init.lua if you're interested in keeping
-  --    up-to-date with whatever is in the kickstart repo.
-  --
-  --    For additional information see: https://github.com/folke/lazy.nvim#-structuring-your-plugins
-  --
-  --    An additional note is that if you only copied in the `init.lua`, you can just comment this line
-  --    to get rid of the warning telling you that there are not plugins in `lua/custom/plugins/`.
-  -- UNCOMMENT TO ADD CUSTOM PLUGINS -> { import = 'custom.plugins' },
 }, {})
 
 -- [[ Setting options ]]
@@ -236,10 +212,10 @@ require('lazy').setup({
 -- Set highlight on search
 vim.o.hlsearch = false
 
--- Make line numbers default
+-- Make line numbers default, relative numbering
 vim.wo.number = true
--- Use relative numbering
 vim.wo.relativenumber = true
+vim.bo.syntax = 'off'
 vim.opt.background = 'light'
 
 -- Enable mouse mode
@@ -354,11 +330,14 @@ vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { de
 require('nvim-treesitter.configs').setup {
   -- Add languages to be installed here that you want installed for treesitter
   ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'vim' },
-
-  -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
+  sync_install = false,
   auto_install = false,
+  modules = {},
+  ignore_install = {},
 
-  highlight = { enable = true },
+  highlight = {
+    enable = false,
+  },
   indent = { enable = true, disable = { 'python' } },
   incremental_selection = {
     enable = true,
@@ -466,17 +445,7 @@ local on_attach = function(_, bufnr)
   end, { desc = 'Format current buffer with LSP' })
 end
 
--- Enable the following language servers
---  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
---
---  Add any additional override configuration in the following tables. They will be passed to
---  the `settings` field of the server config. You must look up that documentation yourself.
 local servers = {
-  -- clangd = {},
-  -- pyright = {},
-  -- rust_analyzer = {},
-  -- tsserver = {},
-
   --[[
   -- List of options: https://github.com/golang/tools/blob/master/gopls/doc/settings.md
   -- Editor config: https://github.com/golang/tools/blob/master/gopls/doc/vim.md#neovim-config
@@ -485,12 +454,19 @@ local servers = {
   gopls = {
     settings = {
       gopls = {
+        expandWorkspaceToModule = true,
+        experimentalWorkspaceModule = true,
+        directoryFilters = { "-.git", "-cloud/healthchecker", "-broker"},
+        ui = {
+          semanticTokens = false,
+        },
         analyses = {
           unusedparams = true,
         },
         staticcheck = true,
         gofumpt = true,
       },
+      directoryFilters = { "-.git" },
     },
   },
   lua_ls = {
@@ -516,6 +492,7 @@ local mason_lspconfig = require 'mason-lspconfig'
 
 mason_lspconfig.setup {
   ensure_installed = vim.tbl_keys(servers),
+  automatic_installation = false,
 }
 
 mason_lspconfig.setup_handlers {
@@ -572,6 +549,24 @@ cmp.setup {
     { name = 'luasnip' },
   },
 }
+
+vim.opt.fillchars:append({fold = " "})
+vim.cmd('colorscheme PaperColor')
+vim.cmd([[
+  function! MyFoldText()
+    let nl = v:foldend - v:foldstart + 1
+    return '+ --> ' . nl . ' lines'
+  endfunction
+  set foldtext=MyFoldText()
+  set foldlevelstart=99
+  set foldmethod=indent
+  hi Folded guifg='#ff0000' guibg=none gui=none
+
+  syntax off
+  autocmd FileType go highlight Comment guifg='#ababab' gui=none
+  autocmd FileType go match Comment /\/\/.*/
+  autocmd BufEnter,BufNewFile,BufRead *.go set filetype=go
+]])
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
