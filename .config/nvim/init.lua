@@ -258,7 +258,8 @@ vim.keymap.set({ 'n', 'v' }, '<Space>', '<Nop>', { silent = true })
 vim.keymap.set('i', 'ij', '<Esc>', { noremap = true })  -- personal escape preference
 vim.keymap.set('n', '<c-l>', ':checktime<CR>', { noremap = true })  -- refresh buffers
 --vim.keymap.set('n', '<leader>f', ':!gofmt -s -w .<CR> | :checktime<CR>', { noremap = true })  -- fmt&refresh
-vim.keymap.set('n', '<leader>q', ':!sqlc compile', { noremap = true })  -- sqlc compiler (pre-gen)
+vim.keymap.set('n', '<leader>sc', ':!sqlc compile<CR>', { noremap = true })  -- sqlc compiler (pre-gen)
+vim.keymap.set('n', '<leader>rs', ':LspRestart<CR>', { noremap = true })
 
 
 -- Remap for dealing with word wrap
@@ -293,7 +294,11 @@ require('go').setup()
 require('telescope').setup {
   defaults = {
     file_ignore_patterns = {
-      "pkg/schwab/testdata"
+      "bin/",
+      "internal/marketdb/testdata",
+      "databases",
+      "simulations",
+      "metadata",
     },
     mappings = {
       i = {
@@ -454,9 +459,10 @@ local servers = {
   gopls = {
     settings = {
       gopls = {
+        buildFlags = {"-tags=bluepill"},
         expandWorkspaceToModule = true,
         experimentalWorkspaceModule = true,
-        directoryFilters = { "-.git", "-cloud/healthchecker", "-broker"},
+        directoryFilters = { "-.git", "-cloud/healthchecker", "-broker", "-**/databases/**"},
         ui = {
           semanticTokens = false,
         },
@@ -466,8 +472,8 @@ local servers = {
         staticcheck = true,
         gofumpt = true,
       },
-      directoryFilters = { "-.git" },
     },
+    directoryFilters = { "-.git" },
   },
   lua_ls = {
     Lua = {
@@ -565,6 +571,7 @@ vim.cmd([[
   syntax off
   autocmd FileType go highlight Comment guifg='#ababab' gui=none
   autocmd FileType go match Comment /\/\/.*/
+  autocmd FileType sql match Comment /\-\-.*/
   autocmd BufEnter,BufNewFile,BufRead *.go set filetype=go
 ]])
 

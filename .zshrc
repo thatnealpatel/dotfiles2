@@ -75,11 +75,12 @@ alias gc='git commit'
 
 export HOMEBREW_NO_ANALYTICS=1 # no homebrew analytics
 export GOPATH=$HOME/go
-# export PATH=$HOME/bin:$HOME/code/public/go/bin:$PATH:$HOME/go/bin
-export PATH=$(cat $HOME/.LOCALPATH):$HOME/bin
+export PATH=$HOME/bin:$HOME/code/public/go/bin:$PATH:$HOME/go/bin
+export VISUAL=/home/neal/bin/nvim
+export EDITOR="$VISUAL"
 
 # The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/neal/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/neal/Downloads/google-cloud-sdk/path.zsh.inc'; fi
+if [ -f '/home/neal/tmp/google-cloud-sdk/path.zsh.inc' ]; then . '/home/neal/tmp/google-cloud-sdk/path.zsh.inc'; fi
 
 # The next line enables shell command completion for gcloud.
-if [ -f '/Users/neal/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/neal/Downloads/google-cloud-sdk/completion.zsh.inc'; fi
+if [ -f '/home/neal/tmp/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/neal/tmp/google-cloud-sdk/completion.zsh.inc'; fi
