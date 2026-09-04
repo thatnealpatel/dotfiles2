@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bootstrap a fresh Debian 13 x86_64 host into the full environment.
+# Bootstrap a fresh Debian 13 or Ubuntu 24.04 x86_64 host into the full environment.
 #
 #   curl -fsSL https://raw.githubusercontent.com/thatnealpatel/dotfiles2/main/.bootstrap/bootstrap.sh | bash
 #
@@ -47,7 +47,10 @@ as_root() { if [ "$(id -u)" -eq 0 ]; then "$@"; else sudo "$@"; fi; }
 
 preflight() {
   [ -r /etc/os-release ] && . /etc/os-release
-  [ "${ID:-}" = debian ] || die "targets Debian, found ${PRETTY_NAME:-unknown}"
+  case ${ID:-} in
+    debian|ubuntu) ;;
+    *) die "targets Debian or Ubuntu, found ${PRETTY_NAME:-unknown}" ;;
+  esac
   [ "$(uname -m)" = x86_64 ] || die "targets x86_64, found $(uname -m)"
   if [ "$(id -u)" -ne 0 ]; then
     command -v sudo >/dev/null || die "sudo is required for a non-root user"

@@ -40,7 +40,8 @@ daily:
   .bootstrap/go-tools.txt          add a go tool
   ~/.config/zsh/local.zsh          host-specific shell, untracked
   ~/.config/nvim/lua/local.lua     host-specific nvim, untracked
-  .bootstrap/test/run.sh [-i]      run it all in a container
+  .bootstrap/test/run.sh [-i]      run it all in a debian 13 container
+  .bootstrap/test/run.sh -os ubuntu    ...or ubuntu 24.04
 
 home layout, always created:
   ~/d   downloads and other large things

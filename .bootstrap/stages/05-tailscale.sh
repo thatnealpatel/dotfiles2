@@ -14,11 +14,11 @@ log "stage 05-tailscale"
 
 if ! have tailscale; then
   log "install tailscale"
-  . /etc/os-release
+  . /etc/os-release   # ID is debian or ubuntu; tailscale mirrors that layout
   as_root install -d -m 0755 /usr/share/keyrings
-  curl -fsSL "https://pkgs.tailscale.com/stable/debian/$VERSION_CODENAME.noarmor.gpg" \
+  curl -fsSL "https://pkgs.tailscale.com/stable/$ID/$VERSION_CODENAME.noarmor.gpg" \
     | as_root tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
-  curl -fsSL "https://pkgs.tailscale.com/stable/debian/$VERSION_CODENAME.tailscale-keyring.list" \
+  curl -fsSL "https://pkgs.tailscale.com/stable/$ID/$VERSION_CODENAME.tailscale-keyring.list" \
     | as_root tee /etc/apt/sources.list.d/tailscale.list >/dev/null
   as_root env DEBIAN_FRONTEND=noninteractive apt-get update -qq
   apt_install tailscale
