@@ -70,8 +70,9 @@ tmux -L check kill-server 2>/dev/null
 
 # --- 30-go, 40-go-tools
 . /src/.bootstrap/versions.sh
-check "go bootstrap present"   test -x "$HOME/sdk/$GO_BOOTSTRAP_VERSION/bin/go"
-check "go-bootstrap link"      test "$(readlink "$HOME/sdk/go-bootstrap")" = "$HOME/sdk/$GO_BOOTSTRAP_VERSION"
+check "go bootstrap present"   test -x "$HOME/d/go/bin/go"
+check "go bootstrap version"   test "$(head -1 "$HOME/d/go/VERSION")" = "$GO_BOOTSTRAP_VERSION"
+check "no ~/sdk"               test ! -e "$HOME/sdk"
 check "go is tip"              sh -c 'go version | grep -q devel'
 check "go fork remote"         sh -c 'git -C ~/w/go remote get-url fork | grep -q thatnealpatel'
 check "gopls installed"        test -x "$HOME/go/bin/gopls"

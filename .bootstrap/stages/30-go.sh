@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # 30-go: Go from tip.
 #
-#   ~/sdk/<GO_BOOTSTRAP_VERSION>/  pinned release, only used to build tip
-#   ~/sdk/go-bootstrap             stable symlink to it; $GOROOT_BOOTSTRAP in path.zsh
-#   ~/w/go                         clone of go.googlesource.com/go, built in place
-#   ~/bin/go, ~/bin/gofmt          symlinks into ~/w/go/bin
+#   ~/d/go                 pinned release, only used to build tip; $GOROOT_BOOTSTRAP
+#   ~/w/go                 clone of go.googlesource.com/go, built in place
+#   ~/bin/go, ~/bin/gofmt  symlinks into ~/w/go/bin
 #
 # ~/w/go is never pulled by this script: it is a working tree. Re-run after
 # pulling to rebuild. The build is skipped when HEAD matches the last build.
@@ -13,21 +12,20 @@ set -euo pipefail
 . "$(dirname "$0")/../versions.sh"
 log "stage 30-go"
 
-sdk="$HOME/sdk"
-boot="$sdk/$GO_BOOTSTRAP_VERSION"
+boot="$HOME/d/go"
 tip="$HOME/w/go"
 built="$HOME/.cache/go-tip-built-rev"
 logfile="$HOME/.cache/go-tip-build.log"
 
-# bootstrap toolchain
-if [ ! -x "$boot/bin/go" ]; then
+# bootstrap toolchain. Whatever is at ~/d/go that is not exactly the pinned
+# version is replaced.
+if [ ! -x "$boot/bin/go" ] || [ "$(head -1 "$boot/VERSION" 2>/dev/null)" != "$GO_BOOTSTRAP_VERSION" ]; then
   log "go $GO_BOOTSTRAP_VERSION -> $boot"
-  mkdir -p "$sdk"
+  rm -rf "$boot"
+  mkdir -p "$boot"
   curl -fsSL --retry 3 "https://go.dev/dl/$GO_BOOTSTRAP_VERSION.linux-amd64.tar.gz" \
-    | tar -C "$sdk" -xzf -
-  mv "$sdk/go" "$boot"
+    | tar -C "$boot" --strip-components=1 -xzf -
 fi
-link "$boot" "$sdk/go-bootstrap"
 
 # tip source
 if [ ! -d "$tip/.git" ]; then
