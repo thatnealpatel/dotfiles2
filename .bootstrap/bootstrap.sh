@@ -82,7 +82,7 @@ checkout() {
       mv "$HOME/$f" "$BACKUP_DIR/$f"
       moved=1
     fi
-  done < <(dg ls-tree -r --name-only "$DOTFILES_REF")
+  done < <(dg ls-tree -r --full-tree --name-only "$DOTFILES_REF")
   [ "$moved" -eq 1 ] && log "existing files moved to $BACKUP_DIR"
   dg checkout --quiet
 }
@@ -116,13 +116,17 @@ run_stages() {
 }
 
 main() {
+  cd "$HOME"   # git paths below are relative to the work tree
   preflight
-  if [ -d "$DOTFILES_DIR" ]; then
-    log "repo present at $DOTFILES_DIR; skipping clone and checkout"
-  else
+  if [ ! -d "$DOTFILES_DIR" ]; then
     base_packages
     clone
     checkout
+  elif [ ! -d "$BOOTSTRAP_DIR" ]; then
+    log "repo present but never checked out; checking out"
+    checkout
+  else
+    log "repo present at $DOTFILES_DIR; skipping clone and checkout"
   fi
   scaffold_home
   run_stages "$@"
