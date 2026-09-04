@@ -5,7 +5,7 @@
 # here; a tracked file changed in $HOME makes the pull refuse, on purpose.
 d2sync() {
   git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" pull --ff-only || return
-  (( $# )) && "$HOME/.bootstrap/bootstrap.sh" "$@"
+  if (( $# )); then "$HOME/.bootstrap/bootstrap.sh" "$@"; fi
 }
 
 alias gs='git status'
