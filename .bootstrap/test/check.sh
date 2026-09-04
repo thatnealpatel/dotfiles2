@@ -95,6 +95,7 @@ check "tmux base-index 1"     test "$(tmux -L check show -gv base-index)" = 1
 check "tmux mouse on"         test "$(tmux -L check show -gv mouse)" = on
 check "tmux | splits"         sh -c 'tmux -L check list-keys | grep -q "prefix *| *split-window -h"'
 check "tmux resurrect bound"  sh -c 'tmux -L check list-keys | grep -q resurrect'
+check "tmux w has no preview" sh -c 'tmux -L check list-keys | grep -q "prefix *w *choose-tree -wN"'
 tmux -L check kill-server 2>/dev/null
 
 # --- 30-go, 40-go-tools
