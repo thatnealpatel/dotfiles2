@@ -88,6 +88,8 @@ check ",sg mapped"             test "$(nv "vim.fn.maparg(',sg', 'n') ~= ''")" = 
 check "gopls configured"       test "$(nv 'vim.lsp.config.gopls.cmd[1]')" = gopls
 check "completeopt"            test "$(nv 'vim.o.completeopt')" = 'menuone,noselect,popup,fuzzy'
 check "fold text"              test "$(nv 'vim.o.foldtext')" = 'v:lua.FoldText()'
+check "tag stack in statusline" sh -c "$nvim --headless -c 'lua io.write(vim.o.statusline)' +qa 2>&1 | grep -q TagStack"
+check "TagStack() runs"        test "$(nv '_G.TagStack()')" = ""
 # the picker end to end: ,sf with a fixed fzf filter picks the one matching file
 picker=$(cd "$HOME" && mkdir -p pick && touch pick/alpha.txt pick/beta.txt \
   && FZF_DEFAULT_OPTS='--filter=alpha' "$nvim" --headless \

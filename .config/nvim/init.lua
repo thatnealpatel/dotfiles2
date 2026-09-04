@@ -4,7 +4,7 @@
 --   lua/local.lua           untracked, host-specific, loaded last if present
 --
 -- Keys beyond the defaults:  ij (esc)  ,sf (files)  ,sg (grep)  ,e (diagnostic)
--- gd (definition)
+-- gd (definition)  ,t (clear tag stack)
 -- LSP defaults worth knowing: grn rename, gra code action, grr references,
 -- gri implementation, gO symbols, K hover, [d ]d diagnostics, C-n C-p C-y
 -- to pick a completion.
@@ -26,6 +26,20 @@ vim.o.smartcase = true
 vim.o.hlsearch = false
 vim.o.breakindent = true
 vim.o.completeopt = 'menuone,noselect,popup,fuzzy'
+
+-- status line: default layout plus the tag stack, the files you gd'd through
+-- to get here (C-t pops back one). Empty when the stack is empty.
+function _G.TagStack()
+  local stack = vim.fn.gettagstack()
+  local names = {}
+  for i = 1, stack.curidx - 1 do
+    names[#names + 1] = vim.fn.fnamemodify(vim.fn.bufname(stack.items[i].from[1]), ':t')
+  end
+  if #names == 0 then return '' end
+  names[#names + 1] = vim.fn.expand('%:t')
+  return table.concat(names, ' > ')
+end
+vim.o.statusline = ' %<%f %h%w%m%r %=%{v:lua.TagStack()}  %-14.(%l,%c%V%) %P '
 
 -- indent guides without a plugin: one bar per level, for tabs (Go) and spaces
 vim.o.list = true
@@ -116,6 +130,9 @@ vim.keymap.set('i', 'ij', '<Esc>')
 vim.keymap.set('n', '<leader>sf', find_files, { desc = 'find files' })
 vim.keymap.set('n', '<leader>sg', live_grep, { desc = 'live grep' })
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'diagnostic under cursor' })
+vim.keymap.set('n', '<leader>t', function()
+  vim.fn.settagstack(vim.fn.win_getid(), { items = {} }, 'r')
+end, { desc = 'clear tag stack' })
 
 -- [[ lsp ]] gopls from PATH (~/go/bin, built from tip).
 -- Per-project settings such as build tags go in lua/local.lua:
