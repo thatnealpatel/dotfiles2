@@ -1,0 +1,23 @@
+# Installed by bootstrap.sh after checkout. One per line; # comments allowed.
+
+# base (bootstrap.sh installs these before cloning, listed for completeness)
+git
+curl
+ca-certificates
+zsh
+
+# shell
+tmux
+fzf
+ripgrep
+
+# build: neovim, go, telescope-fzf-native
+build-essential
+cmake
+ninja-build
+gettext
+unzip
+pkg-config
+
+# tool managers
+opam

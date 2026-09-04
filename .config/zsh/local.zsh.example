@@ -1,0 +1,18 @@
+# local.zsh: host-specific config. Untracked. Sourced last by .zshrc, so
+# anything here overrides the tracked files.
+#
+# Sections mirror the tracked files. To promote a line that turns out to be
+# the same on every host, move it into the tracked file of the same name
+# and commit. Never put a hostname, IP, or secret in a tracked file.
+#
+# Bootstrap copies this file to local.zsh once; edit that, not this.
+
+# --- path.zsh
+# path=("$HOME/some/other/bin" $path)
+
+# --- aliases.zsh
+# alias exe='ssh -i "$HOME/.yah/secrets/exedev_id_ed25519" exe.dev'
+
+# --- tools.zsh
+# export GHFA_PROXY="http://<tailnet-host>:9001"     # gas-station proxy
+# export RETRIEVAL_HOST="http://<tailnet-host>:9001"

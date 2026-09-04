@@ -1,0 +1,5 @@
+# go install manifest, one module path@version per line, # comments allowed.
+# Installed by stages/40-go-tools.sh with the tip toolchain into ~/go/bin.
+# Private tools are not listed here; install those by hand or from local.zsh.
+
+golang.org/x/tools/gopls@master
