@@ -3,7 +3,8 @@
 --   colors/PaperColor.vim   vendored theme, the only third-party code
 --   lua/local.lua           untracked, host-specific, loaded last if present
 --
--- Keys beyond the defaults:  ij (esc)  ,sf (files)  ,sg (grep)  gd (definition)
+-- Keys beyond the defaults:  ij (esc)  ,sf (files)  ,sg (grep)  ,e (diagnostic)
+-- gd (definition)
 -- LSP defaults worth knowing: grn rename, gra code action, grr references,
 -- gri implementation, gO symbols, K hover, [d ]d diagnostics, C-n C-p C-y
 -- to pick a completion.
@@ -61,14 +62,16 @@ vim.api.nvim_create_autocmd('FileType', {
   callback = function() vim.cmd([[match Comment /\-\-.*/]]) end,
 })
 
--- [[ picker ]] fzf in a bottom split. Needs fzf and rg on PATH.
+-- [[ picker ]] fzf in a bottom split, preview above the list. Needs fzf and rg.
 -- Esc closes it. The pick, if any, is handed to on_pick after the split is gone.
-local FZF = 'fzf --color=light'
+-- C-j C-k move the list (fzf default), C-d C-u scroll the preview.
+local FZF = 'fzf --color=light --preview-window=up,60%,border-bottom'
+  .. ' --bind ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up'
 
 local function fzf(cmd, on_pick)
   local out = vim.fn.tempname()
   local origin = vim.api.nvim_get_current_win()
-  vim.cmd('botright 15new')
+  vim.cmd(('botright %dnew'):format(math.floor(vim.o.lines * 0.6)))
   local buf = vim.api.nvim_get_current_buf()
   vim.bo[buf].bufhidden = 'wipe'
 
@@ -91,13 +94,15 @@ local function fzf(cmd, on_pick)
 end
 
 local function find_files()
-  fzf('rg --files --hidden --glob !.git | ' .. FZF, vim.cmd.edit)
+  fzf('rg --files --hidden --glob !.git | ' .. FZF .. " --preview 'cat -n {}'", vim.cmd.edit)
 end
 
--- live grep: fzf only renders; rg re-runs on every keystroke
+-- live grep: fzf only renders; rg re-runs on every keystroke.
+-- Lines are file:line:text, so {1} is the file and {2} the line for the preview.
 local function live_grep()
   local rg = 'rg --line-number --no-heading --color=never --smart-case -- {q} || true'
-  fzf(FZF .. " --disabled --bind 'change:reload:" .. rg .. "'", function(pick)
+  fzf(FZF .. " --disabled --delimiter : --bind 'change:reload:" .. rg .. "'"
+      .. " --preview 'cat -n {1}' --preview-window=up,60%,border-bottom,+{2}-/2", function(pick)
     local file, line = pick:match('^(.-):(%d+):')
     if not file then return end
     vim.cmd.edit(file)
@@ -109,6 +114,7 @@ end
 vim.keymap.set('i', 'ij', '<Esc>')
 vim.keymap.set('n', '<leader>sf', find_files, { desc = 'find files' })
 vim.keymap.set('n', '<leader>sg', live_grep, { desc = 'live grep' })
+vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'diagnostic under cursor' })
 
 -- [[ lsp ]] gopls from PATH (~/go/bin, built from tip).
 -- Per-project settings such as build tags go in lua/local.lua:

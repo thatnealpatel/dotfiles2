@@ -28,6 +28,8 @@ rc=$?
 if [ "${SHELL_AFTER:-0}" = 1 ]; then
   echo
   echo "--- interactive shell in the container. exit to tear it down."
-  cd "$HOME" && exec zsh -l
+  # a real Go repo to try the editor on
+  [ -d "$HOME/p/mono/.git" ] || git clone --quiet https://github.com/thatnealpatel/mono "$HOME/p/mono"
+  cd "$HOME/p/mono" && exec zsh -l
 fi
 exit "$rc"
