@@ -92,10 +92,12 @@ check "tmux-resurrect cloned" \
 tmux_err=$(TERM=xterm-256color tmux -L check new-session -d -s check 2>&1)
 if [ -z "$tmux_err" ]; then ok "tmux starts with config"; else bad "tmux starts with config" "$tmux_err"; fi
 check "tmux base-index 1"     test "$(tmux -L check show -gv base-index)" = 1
+check "tmux prefix C-Space"   test "$(tmux -L check show -gv prefix)" = C-Space
 check "tmux mouse on"         test "$(tmux -L check show -gv mouse)" = on
 check "tmux | splits"         sh -c 'tmux -L check list-keys | grep -q "prefix *| *split-window -h"'
 check "tmux resurrect bound"  sh -c 'tmux -L check list-keys | grep -q resurrect'
-check "tmux w has no preview" sh -c 'tmux -L check list-keys | grep -q "prefix *w *choose-tree -wN"'
+check "tmux w is the picker"  sh -c 'tmux -L check list-keys | grep -q "prefix *w .*pick-window"'
+check "pick-window parses"    sh -n "$HOME/.config/tmux/pick-window"
 tmux -L check kill-server 2>/dev/null
 
 # --- 30-go, 40-go-tools

@@ -1,0 +1,73 @@
+#!/bin/sh
+# pick-window: fuzzy window switcher in a centered popup sized to the list.
+#   sh pick-window                          measure the list, open the popup (prefix w)
+#   sh pick-window pick                     what runs inside the popup
+#   sh pick-window list                     the aligned, colored list fzf shows
+#   sh pick-window rename-session SESS:IDX  prompt, rename that session
+#   sh pick-window rename-window  SESS:IDX  prompt, rename that window
+#
+# keys inside: enter switch, C-r rename session, C-w rename window, esc close
+set -e
+
+grey=$(printf '\033[38;5;244m'); black=$(printf '\033[30m'); reset=$(printf '\033[0m')
+strip_ansi() { sed 's/\x1b\[[0-9;]*m//g'; }
+
+# hint KEY WORDS: key in black, words in grey
+hint() { printf '%s%s%s %s%s' "$black" "$1" "$grey" "$2" "$reset"; }
+
+# One row per window: session:index, name, then in grey the active pane's
+# command and directory. Columns are padded to the widest value in each.
+list() {
+  tmux list-windows -a -F "#{session_name}:#{window_index}	#{window_name}	#{pane_current_command}	#{s|^$HOME|~|:pane_current_path}" \
+    | awk -F '\t' -v g="$grey" -v r="$reset" '
+        { rows[NR] = $0; for (i = 1; i <= NF; i++) if (length($i) > w[i]) w[i] = length($i) }
+        function pad(s, n) { while (length(s) < n) s = s " "; return s }
+        END {
+          for (n = 1; n <= NR; n++) {
+            split(rows[n], f, "\t")
+            printf "%s  %s  %s%s  %s%s\n", pad(f[1], w[1]), pad(f[2], w[2]), g, pad(f[3], w[3]), f[4], r
+          }
+        }'
+}
+
+case ${1:-} in
+  list) list; exit 0 ;;
+  pick)
+    header="
+$(hint enter switch)   $(hint C-r 'rename session')   $(hint C-w 'rename window')   $(hint esc close)
+"
+    list \
+      | fzf --layout=reverse-list --no-info --ansi --color=light --prompt '> ' \
+            --header "$header" \
+            --bind "ctrl-r:execute(sh '$0' rename-session {1})+reload(sh '$0' list)" \
+            --bind "ctrl-w:execute(sh '$0' rename-window {1})+reload(sh '$0' list)" \
+      | cut -d' ' -f1 | xargs -r tmux switch-client -t
+    exit 0 ;;
+  rename-session)
+    session=${2%%:*}
+    printf 'rename session %s to: ' "$session" >/dev/tty
+    read -r name </dev/tty
+    [ -n "$name" ] && tmux rename-session -t "$session" "$name"
+    exit 0 ;;
+  rename-window)
+    current=$(tmux display -p -t "$2" '#{window_name}')
+    printf 'rename window %s (%s) to: ' "$2" "$current" >/dev/tty
+    read -r name </dev/tty
+    [ -n "$name" ] && tmux rename-window -t "$2" "$name"
+    exit 0 ;;
+esac
+
+plain=$(list | strip_ansi)
+n=$(printf '%s\n' "$plain" | wc -l)
+longest=$(printf '%s\n' "$plain" | awk '{ if (length > m) m = length } END { print m }')
+w=$((longest + 6))   # fzf pointer and prompt, popup border
+h=$((n + 6))         # blank, hints, blank, prompt, popup border
+
+# never larger than the client, never narrower than the hint line
+cw=$(tmux display -p '#{client_width}')
+ch=$(tmux display -p '#{client_height}')
+[ "$w" -gt $((cw - 2)) ] && w=$((cw - 2))
+[ "$h" -gt $((ch - 2)) ] && h=$((ch - 2))
+[ "$w" -lt 72 ] && w=72
+
+exec tmux display-popup -E -w "$w" -h "$h" "sh '$0' pick"
