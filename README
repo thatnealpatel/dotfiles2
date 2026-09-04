@@ -12,7 +12,11 @@ this script clones this bare repo into
 ~/.dotfiles and sets up the worktree.
 it then executes each of the stages:
 
+flags (after `bash -s --` when piped from curl):
+  -ts_authkey KEY  join the tailnet; also read from $TS_AUTHKEY
+
 stages (.bootstrap/stages):
+  05-tailscale apt repo and package; joins only with a key
   10-zsh       plugins, zoxide, login shell
   20-tmux      tmux-resurrect
   30-go        pinned release as bootstrap, tip built at ~/w/go

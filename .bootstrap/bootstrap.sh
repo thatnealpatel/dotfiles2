@@ -3,13 +3,32 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/thatnealpatel/dotfiles2/main/.bootstrap/bootstrap.sh | bash
 #
-# Re-runnable. With arguments, runs only the named stages:
+# Re-runnable. With stage names, runs only those:
 #   ~/.bootstrap/bootstrap.sh 30-go 50-neovim
+#
+# Flags:
+#   -ts_authkey KEY  join the tailnet with this auth key (stage 05-tailscale).
+#                    Also read from $TS_AUTHKEY. Via curl: bash -s -- -ts_authkey KEY
 #
 # Overrides, used by .bootstrap/test/run.sh:
 #   DOTFILES_REPO  clone source          (default: github https url)
 #   DOTFILES_REF   branch to check out   (default: main)
 set -euo pipefail
+
+TS_AUTHKEY="${TS_AUTHKEY:-}"
+stages=()
+while [ $# -gt 0 ]; do
+  case $1 in
+    -ts_authkey)   [ $# -ge 2 ] || { echo "-ts_authkey needs a key" >&2; exit 2; }
+                   TS_AUTHKEY=$2; shift 2 ;;
+    -ts_authkey=*) TS_AUTHKEY=${1#*=}; shift ;;
+    -h|--help)     sed -n '2,15p' "$0" 2>/dev/null; exit 0 ;;
+    -*)            echo "unknown flag: $1" >&2; exit 2 ;;
+    *)             stages+=("$1"); shift ;;
+  esac
+done
+export TS_AUTHKEY
+set -- "${stages[@]}"
 
 export DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/thatnealpatel/dotfiles2.git}"
 export DOTFILES_PUSH="${DOTFILES_PUSH:-git@github.com:thatnealpatel/dotfiles2.git}"

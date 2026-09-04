@@ -4,6 +4,9 @@
 #   .bootstrap/test/run.sh                 all stages, then checks
 #   .bootstrap/test/run.sh 50-neovim       named stages only
 #   .bootstrap/test/run.sh -i              ...then drop into zsh inside the container
+#   .bootstrap/test/run.sh -i -ts_authkey tskey-auth-...
+#                                          ...and join the tailnet (use an ephemeral key)
+#                                          (TS_AUTHKEY in the environment also works)
 #
 # The working tree of this clone (tracked and untracked, uncommitted included)
 # is snapshotted into a throwaway repo inside the container and bootstrap
@@ -17,11 +20,14 @@ set -euo pipefail
 
 interactive=0
 stages=()
-for a in "$@"; do
-  case $a in
-    -i) interactive=1 ;;
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
-    *)  stages+=("$a") ;;
+while [ $# -gt 0 ]; do
+  case $1 in
+    -i)            interactive=1; shift ;;
+    -ts_authkey)   TS_AUTHKEY=$2; shift 2 ;;
+    -ts_authkey=*) TS_AUTHKEY=${1#*=}; shift ;;
+    -h|--help)     sed -n '2,17p' "$0"; exit 0 ;;
+    -*)            echo "run.sh: unknown flag $1" >&2; exit 2 ;;
+    *)             stages+=("$1"); shift ;;
   esac
 done
 
@@ -43,5 +49,6 @@ docker run --rm "${tty[@]}" \
   -v dotfiles2-test-w:/home/neal/w \
   -v dotfiles2-test-go:/home/neal/go \
   -e STAGES="${stages[*]:-}" \
+  -e TS_AUTHKEY="${TS_AUTHKEY:-}" \
   -e SHELL_AFTER="$interactive" \
   "$image" bash /src/.bootstrap/test/inside.sh

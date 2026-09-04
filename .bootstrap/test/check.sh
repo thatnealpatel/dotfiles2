@@ -27,6 +27,14 @@ check "dg status is clean" \
 # --- home layout
 check "~/d ~/p ~/w ~/t ~/s exist" test -d ~/d -a -d ~/p -a -d ~/w -a -d ~/t -a -d ~/s
 
+# --- 05-tailscale
+check "tailscale installed"     command -v tailscale
+if [ -n "${TS_AUTHKEY:-}" ]; then
+  ts="tailscale --socket=$HOME/.local/state/tailscale/tailscaled.sock"
+  check "tailscale has an ip"     sh -c "$ts ip -4 | grep -q '^100\.'"
+  check "tailscale is running"    sh -c "$ts status --json | grep -q '\"BackendState\": *\"Running\"'"
+fi
+
 # --- 10-zsh
 check "login shell is zsh" \
   test "$(getent passwd "$(id -un)" | cut -d: -f7)" = "$(command -v zsh)"
