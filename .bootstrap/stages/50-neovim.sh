@@ -37,3 +37,8 @@ fi
 
 link "$prefix/bin/nvim" "$HOME/.local/bin/nvim"
 log "nvim -> $("$HOME/.local/bin/nvim" --version | head -1)"
+
+# ~/bin precedes ~/.local/bin on PATH; a stale nvim there shadows this build
+if [ -e "$HOME/bin/nvim" ] && [ "$(readlink -f "$HOME/bin/nvim")" != "$(readlink -f "$prefix/bin/nvim")" ]; then
+  warn "$HOME/bin/nvim shadows the new build; remove it"
+fi

@@ -14,6 +14,12 @@ it then executes each of the stages:
 
 flags (after `bash -s --` when piped from curl):
   -ts_authkey KEY  join the tailnet; also read from $TS_AUTHKEY
+  -migrate         move a previous setup aside without asking
+
+on a host with a previous setup (oh-my-zsh, an old
+~/.dotfiles, ~/sdk, a stale ~/bin/nvim) bootstrap
+lists what it found and asks y/N. y moves it all to
+~/.dotfiles-backup/<timestamp>/ and installs fresh.
 
 stages (.bootstrap/stages):
   05-tailscale apt repo and package; joins only with a key

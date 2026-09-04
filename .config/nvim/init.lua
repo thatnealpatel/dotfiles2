@@ -3,8 +3,8 @@
 --   colors/PaperColor.vim   vendored theme, the only third-party code
 --   lua/local.lua           untracked, host-specific, loaded last if present
 --
--- Keys beyond the defaults:  ij (esc)  ,sf (files)  ,sg (grep)  ,e (diagnostic)
--- gd (definition)  ,t (clear tag stack)
+-- C-h opens the cheat sheet. Keys beyond the defaults:  ij (esc)  ,sf (files)
+-- ,sg (grep)  ,e (diagnostic)  gd (definition)  ,t (clear tag stack)
 -- LSP defaults worth knowing: grn rename, gra code action, grr references,
 -- gri implementation, gO symbols, K hover, [d ]d diagnostics, C-n C-p C-y
 -- to pick a completion.
@@ -125,8 +125,52 @@ local function live_grep()
   end)
 end
 
+-- [[ cheat sheet ]] C-h opens a tab listing every described mapping, global and
+-- buffer-local, plus the keys that live inside fzf and the completion popup.
+local function cheat_sheet()
+  local buf = vim.api.nvim_get_current_buf()
+  local lines = { 'keys.  q closes.', '' }
+  for _, mode in ipairs({ { 'n', 'normal' }, { 'x', 'visual' }, { 'i', 'insert' }, { 't', 'terminal' } }) do
+    local rows = {}
+    for _, m in ipairs(vim.list_extend(vim.api.nvim_get_keymap(mode[1]), vim.api.nvim_buf_get_keymap(buf, mode[1]))) do
+      if m.desc and m.desc ~= '' then rows[#rows + 1] = ('  %-16s %s'):format(m.lhs, m.desc) end
+    end
+    if #rows > 0 then
+      table.sort(rows)
+      lines[#lines + 1] = mode[2] .. ':'
+      vim.list_extend(lines, rows)
+      lines[#lines + 1] = ''
+    end
+  end
+  vim.list_extend(lines, {
+    'picker (,sf ,sg):',
+    '  C-j C-k          move through results',
+    '  C-d C-u          scroll the preview',
+    '  enter            open',
+    '  esc              close',
+    '',
+    'completion popup:',
+    '  C-n C-p          next, previous',
+    '  C-y              accept',
+    '  C-e              dismiss',
+    '',
+    'tag stack:',
+    '  gd  C-]          push and jump',
+    '  C-t              pop',
+    '  ,t               clear',
+  })
+  vim.cmd('tabnew')
+  local sheet = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_lines(sheet, 0, -1, false, lines)
+  vim.bo[sheet].buftype = 'nofile'
+  vim.bo[sheet].bufhidden = 'wipe'
+  vim.bo[sheet].modifiable = false
+  vim.keymap.set('n', 'q', '<Cmd>tabclose<CR>', { buffer = sheet })
+end
+
 -- [[ keys ]]
-vim.keymap.set('i', 'ij', '<Esc>')
+vim.keymap.set('i', 'ij', '<Esc>', { desc = 'escape' })
+vim.keymap.set('n', '<C-h>', cheat_sheet, { desc = 'cheat sheet' })
 vim.keymap.set('n', '<leader>sf', find_files, { desc = 'find files' })
 vim.keymap.set('n', '<leader>sg', live_grep, { desc = 'live grep' })
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'diagnostic under cursor' })

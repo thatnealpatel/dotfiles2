@@ -9,6 +9,7 @@
 # Flags:
 #   -ts_authkey KEY  join the tailnet with this auth key (stage 05-tailscale).
 #                    Also read from $TS_AUTHKEY. Via curl: bash -s -- -ts_authkey KEY
+#   -migrate         move a previous setup aside without asking (see migrate_existing)
 #
 # Overrides, used by .bootstrap/test/run.sh:
 #   DOTFILES_REPO  clone source          (default: github https url)
@@ -16,13 +17,15 @@
 set -euo pipefail
 
 TS_AUTHKEY="${TS_AUTHKEY:-}"
+MIGRATE=0
 stages=()
 while [ $# -gt 0 ]; do
   case $1 in
     -ts_authkey)   [ $# -ge 2 ] || { echo "-ts_authkey needs a key" >&2; exit 2; }
                    TS_AUTHKEY=$2; shift 2 ;;
     -ts_authkey=*) TS_AUTHKEY=${1#*=}; shift ;;
-    -h|--help)     sed -n '2,15p' "$0" 2>/dev/null; exit 0 ;;
+    -migrate)      MIGRATE=1; shift ;;
+    -h|--help)     sed -n '2,16p' "$0" 2>/dev/null; exit 0 ;;
     -*)            echo "unknown flag: $1" >&2; exit 2 ;;
     *)             stages+=("$1"); shift ;;
   esac
@@ -52,6 +55,47 @@ preflight() {
     if [ -r /dev/tty ]; then sudo -v </dev/tty; else sudo -n true; fi \
       || die "sudo access is required"
   fi
+}
+
+# Traces of a previous setup that this layout supersedes. If any exist, list
+# them and offer to move them all into $BACKUP_DIR so the install is fresh.
+# Answer y, pass -migrate, or they are left alone and checkout may refuse.
+migrate_existing() {
+  local legacy=(.zshrc .zshrc.backup .shell.pre-oh-my-zsh .zprofile .oh-my-zsh
+    .tmux/plugins .LOCALPATH sdk .local/share/nvim/lazy .local/share/nvim/mason)
+  local found=() f
+  for f in "${legacy[@]}"; do
+    if [ -e "$HOME/$f" ] || [ -L "$HOME/$f" ]; then found+=("$f"); fi
+  done
+  for f in "$HOME"/.zcompdump*; do [ -e "$f" ] && found+=("${f#"$HOME"/}"); done
+  # an nvim in ~/bin that is not ours shadows the build (~/bin is first on PATH)
+  if [ -e "$HOME/bin/nvim" ] && [[ $(readlink -f "$HOME/bin/nvim") != "$HOME/.local/nvim/"* ]]; then
+    found+=(bin/nvim)
+  fi
+  # a bare repo from before this layout, recognisable by having no .bootstrap
+  if [ -d "$DOTFILES_DIR" ] && ! dg ls-tree --name-only HEAD .bootstrap 2>/dev/null | grep -q .; then
+    found+=(.dotfiles)
+  fi
+  [ ${#found[@]} -eq 0 ] && return 0
+
+  log "found a previous setup:"
+  printf '    ~/%s\n' "${found[@]}" >&2
+  local ans=N
+  if [ "$MIGRATE" = 1 ]; then
+    ans=y
+  elif [ -r /dev/tty ]; then
+    printf 'move all of it to %s and migrate? [y/N] ' "$BACKUP_DIR" >&2
+    read -r ans </dev/tty
+  fi
+  case $ans in
+    y|Y|yes) ;;
+    *) log "leaving it in place"; return 0 ;;
+  esac
+  for f in "${found[@]}"; do
+    mkdir -p "$BACKUP_DIR/$(dirname "$f")"
+    mv "$HOME/$f" "$BACKUP_DIR/$f"
+  done
+  log "moved to $BACKUP_DIR; delete it once the new setup is confirmed"
 }
 
 base_packages() {
@@ -118,6 +162,7 @@ run_stages() {
 main() {
   cd "$HOME"   # git paths below are relative to the work tree
   preflight
+  migrate_existing
   if [ ! -d "$DOTFILES_DIR" ]; then
     base_packages
     clone

@@ -24,6 +24,11 @@ export PATH="$HOME/bin:$HOME/.local/bin:$HOME/go/bin:$PATH"
 check "dg status is clean" \
   test -z "$(git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" status --short)"
 
+# --- migration of the planted previous setup
+check "old ~/.zshrc moved aside"   test ! -e "$HOME/.zshrc"
+check "old ~/.oh-my-zsh moved"     test ! -e "$HOME/.oh-my-zsh"
+check "backup holds them"          sh -c 'ls -d ~/.dotfiles-backup/*/.zshrc ~/.dotfiles-backup/*/.oh-my-zsh'
+
 # --- home layout
 check "~/d ~/p ~/w ~/t ~/s exist" test -d ~/d -a -d ~/p -a -d ~/w -a -d ~/t -a -d ~/s
 
@@ -99,6 +104,7 @@ check "completeopt"            test "$(nv 'vim.o.completeopt')" = 'menuone,nosel
 check "fold text"              test "$(nv 'vim.o.foldtext')" = 'v:lua.FoldText()'
 check "tag stack in statusline" sh -c "$nvim --headless -c 'lua io.write(vim.o.statusline)' +qa 2>&1 | grep -q TagStack"
 check "TagStack() runs"        test "$(nv '_G.TagStack()')" = ""
+check "C-h cheat sheet"        sh -c "$nvim --headless -c 'lua vim.fn.feedkeys(vim.keycode(\"<C-h>\"), \"x\")' -c 'lua io.write(vim.fn.getline(1))' +qa 2>&1 | grep -q '^keys'"
 # the picker end to end: ,sf with a fixed fzf filter picks the one matching file
 picker=$(cd "$HOME" && mkdir -p pick && touch pick/alpha.txt pick/beta.txt \
   && FZF_DEFAULT_OPTS='--filter=alpha' "$nvim" --headless \

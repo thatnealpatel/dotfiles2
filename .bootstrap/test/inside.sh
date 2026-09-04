@@ -14,8 +14,13 @@ git -C /tmp/src -c user.name=test -c user.email=test@localhost add -A
 git -C /tmp/src -c user.name=test -c user.email=test@localhost commit -q -m snapshot
 
 export DOTFILES_REPO=/tmp/src DOTFILES_REF=main
+
+# plant a previous setup so the migration path is exercised on every run
+echo 'export ZSH=$HOME/.oh-my-zsh' >"$HOME/.zshrc"
+mkdir -p "$HOME/.oh-my-zsh/custom"
+
 # shellcheck disable=SC2086
-bash /tmp/src/.bootstrap/bootstrap.sh ${STAGES:-}
+bash /tmp/src/.bootstrap/bootstrap.sh -migrate ${STAGES:-}
 
 echo
 echo "--- tracked files in \$HOME:"
