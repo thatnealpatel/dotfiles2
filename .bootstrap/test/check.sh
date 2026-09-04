@@ -62,6 +62,10 @@ zcheck "extract is a function"  '[[ $(whence -w extract) == *function ]]'
 zcheck "d2sync is a function"   '[[ $(whence -w d2sync) == *function ]]'
 zcheck "PATH has ~/.local/bin"  '[[ :$PATH: == *:$HOME/.local/bin:* ]]'
 zcheck "EDITOR is nvim"         '[[ $EDITOR == nvim ]]'
+# nvm must not load at startup even when installed; plant a fake one
+mkdir -p "$HOME/.nvm" && echo 'nvm_auto() { :; }; NVM_LOADED=1' >"$HOME/.nvm/nvm.sh"
+zcheck "nvm is lazy"            '[[ -z $NVM_LOADED && $(whence -w nvm) == *function ]]'
+zcheck "nvm loads on first use" 'nvm >/dev/null 2>&1; [[ $NVM_LOADED == 1 ]]'
 
 # --- 15-jj
 check "jj installed"           test -x "$HOME/.local/bin/jj"

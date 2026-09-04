@@ -24,8 +24,19 @@ export LEANDOC_DOT_LAKE="$HOME/p/proofs/.lake"
 [[ -r $HOME/.opam/opam-init/init.zsh ]] \
   && source "$HOME/.opam/opam-init/init.zsh" >/dev/null 2>&1
 
+# nvm costs ~300ms to load, so it loads on first use of any of its commands.
 export NVM_DIR="$HOME/.nvm"
-[[ -s $NVM_DIR/nvm.sh ]] && source "$NVM_DIR/nvm.sh"
+if [[ -s $NVM_DIR/nvm.sh ]]; then
+  _nvm_load() {
+    unfunction nvm node npm npx corepack 2>/dev/null
+    source "$NVM_DIR/nvm.sh"
+  }
+  nvm()      { _nvm_load; nvm "$@" }
+  node()     { _nvm_load; node "$@" }
+  npm()      { _nvm_load; npm "$@" }
+  npx()      { _nvm_load; npx "$@" }
+  corepack() { _nvm_load; corepack "$@" }
+fi
 
 GCLOUD_SDK="$HOME/.local/google-cloud-sdk"
 [[ -r $GCLOUD_SDK/path.zsh.inc ]] && source "$GCLOUD_SDK/path.zsh.inc"
