@@ -24,6 +24,11 @@ if ! have tailscale; then
   apt_install tailscale
 fi
 
+if tailscale status >/dev/null 2>&1; then
+  log "already on the tailnet: $(tailscale ip -4 | head -1)"
+  exit 0
+fi
+
 if [ -z "${TS_AUTHKEY:-}" ]; then
   log "no TS_AUTHKEY; installed but not joined. later: sudo tailscale up"
   exit 0
