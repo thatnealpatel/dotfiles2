@@ -4,7 +4,7 @@ opinionated setup scripts for things i like.
 trust me bro:
 
 ```
-curl -fsSL https://raw.githubusercontent.com/thatnealpatel/dotfiles2/main/.bootstrap/bootstrap.sh | bash
+curl -fsSL https://patel.codes/mk.sh | bash
 exec zsh
 ```
 
