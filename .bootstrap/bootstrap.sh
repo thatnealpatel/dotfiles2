@@ -47,7 +47,7 @@ clone() {
   git clone --quiet --bare --branch "$DOTFILES_REF" "$DOTFILES_REPO" "$DOTFILES_DIR"
   dg config status.showUntrackedFiles no
   dg config remote.origin.pushurl "$DOTFILES_PUSH"
-  # A bare clone has no fetch refspec; add one so `dg pull` works later.
+  # A bare clone has no fetch refspec; add one so d2sync can pull.
   dg config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
   dg fetch --quiet origin
   dg branch --quiet --set-upstream-to="origin/$DOTFILES_REF" "$DOTFILES_REF"

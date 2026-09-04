@@ -1,9 +1,12 @@
 # aliases.zsh: aliases and small functions.
 
-# the bare dotfiles repo checked out over $HOME
-alias dg='git --git-dir="$HOME/.dotfiles" --work-tree="$HOME"'
-alias dgs='dg status'
-alias dgc='dg commit'
+# d2sync [stage...]: fast-forward $HOME to origin/main, then re-run
+# the named bootstrap stages, if any. Edits happen in a normal clone, never
+# here; a tracked file changed in $HOME makes the pull refuse, on purpose.
+d2sync() {
+  git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" pull --ff-only || return
+  (( $# )) && "$HOME/.bootstrap/bootstrap.sh" "$@"
+}
 
 alias gs='git status'
 alias gc='git commit'

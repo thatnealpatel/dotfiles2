@@ -45,7 +45,7 @@ zcheck "autosuggestions loaded" '(( $+functions[_zsh_autosuggest_start] ))'
 zcheck "syntax highlighting"    '(( $+ZSH_HIGHLIGHT_VERSION ))'
 zcheck "z is a function"        '[[ $(whence -w z) == *function ]]'
 zcheck "extract is a function"  '[[ $(whence -w extract) == *function ]]'
-zcheck "dgs alias"              '[[ $(whence -w dgs) == *alias ]]'
+zcheck "d2sync is a function"   '[[ $(whence -w d2sync) == *function ]]'
 zcheck "PATH has ~/.local/bin"  '[[ :$PATH: == *:$HOME/.local/bin:* ]]'
 zcheck "EDITOR is nvim"         '[[ $EDITOR == nvim ]]'
 

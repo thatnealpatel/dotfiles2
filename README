@@ -1,0 +1,52 @@
+thatnealpatel/dotfiles2 provides my bespoke,
+opinionated setup scripts for things i like.
+
+trust me bro:
+
+```
+curl -fsSL https://raw.githubusercontent.com/thatnealpatel/dotfiles2/main/.bootstrap/bootstrap.sh | bash
+exec zsh
+```
+
+this script clones this bare repo into
+~/.dotfiles and sets up the worktree.
+it then executes each of the stages:
+
+stages (.bootstrap/stages):
+  10-zsh       plugins, zoxide, login shell
+  20-tmux      tmux-resurrect
+  30-go        pinned release as bootstrap, tip built at ~/w/go
+  40-go-tools  go install from go-tools.txt
+  50-neovim    pinned release built from source
+
+daily:
+  d2sync [stage...]                fast-forward $HOME to origin/main,
+                                   then re-run the named stages
+  ~/.bootstrap/bootstrap.sh 50-neovim   re-run one stage
+  .bootstrap/versions.sh           bump a pin, re-run its stage
+  .bootstrap/apt-packages.txt      add a package
+  .bootstrap/go-tools.txt          add a go tool
+  ~/.config/zsh/local.zsh          host-specific shell, untracked
+  ~/.config/nvim/lua/local.lua     host-specific nvim, untracked
+  .bootstrap/test/run.sh [-i]      run it all in a container
+
+home layout, always created:
+  ~/d   downloads and other large things
+  ~/p   personal; all code lives here
+  ~/w   work
+  ~/t   temporary, survives reboots
+  ~/s   security
+
+repo layout:
+  .bootstrap/    bootstrap.sh, lib.sh, versions.sh, stages/, test/
+  .config/zsh/   one file per purpose; ZDOTDIR
+  .config/tmux/  tmux.conf
+  .config/nvim/  init.lua, no plugins; PaperColor vendored
+
+anything with a hostname, ip, or secret lives in
+local.zsh or local.lua, never here.
+
+workflow: edit in a normal clone (~/p/dotfiles2),
+commit, push, then d2sync on each host.
+the bare checkout in $HOME is a deploy target,
+not a working tree.
