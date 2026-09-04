@@ -62,16 +62,17 @@ vim.api.nvim_create_autocmd('FileType', {
   callback = function() vim.cmd([[match Comment /\-\-.*/]]) end,
 })
 
--- [[ picker ]] fzf in a bottom split, preview above the list. Needs fzf and rg.
--- Esc closes it. The pick, if any, is handed to on_pick after the split is gone.
+-- [[ picker ]] fzf full screen in its own tab: list left, preview right.
+-- Esc closes it. The pick, if any, is handed to on_pick after the tab is gone.
 -- C-j C-k move the list (fzf default), C-d C-u scroll the preview.
-local FZF = 'fzf --color=light --preview-window=up,60%,border-bottom'
+local FZF = 'fzf --color=light --layout=reverse --info=inline'
+  .. ' --preview-window=right,60%,border-left'
   .. ' --bind ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up'
 
 local function fzf(cmd, on_pick)
   local out = vim.fn.tempname()
   local origin = vim.api.nvim_get_current_win()
-  vim.cmd(('botright %dnew'):format(math.floor(vim.o.lines * 0.6)))
+  vim.cmd('tabnew')
   local buf = vim.api.nvim_get_current_buf()
   vim.bo[buf].bufhidden = 'wipe'
 
@@ -102,7 +103,7 @@ end
 local function live_grep()
   local rg = 'rg --line-number --no-heading --color=never --smart-case -- {q} || true'
   fzf(FZF .. " --disabled --delimiter : --bind 'change:reload:" .. rg .. "'"
-      .. " --preview 'cat -n {1}' --preview-window=up,60%,border-bottom,+{2}-/2", function(pick)
+      .. " --preview 'cat -n {1}' --preview-window=right,60%,border-left,+{2}-/2", function(pick)
     local file, line = pick:match('^(.-):(%d+):')
     if not file then return end
     vim.cmd.edit(file)
