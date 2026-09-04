@@ -1,0 +1,14 @@
+# jj config. Host-specific overrides go in ~/.config/jj/conf.d/, untracked.
+
+[user]
+name = "Neal Patel"
+email = "neal@patel.codes"
+
+# Watchman snapshots the working copy on every file change, so every
+# intermediate state is in `jj op log` and restorable with `jj op restore`.
+# Check with `jj debug watchman status`.
+[fsmonitor]
+backend = "watchman"
+
+[fsmonitor.watchman]
+register-snapshot-trigger = true

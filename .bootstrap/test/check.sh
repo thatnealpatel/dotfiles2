@@ -19,6 +19,7 @@ zcheck() { check "$1" zsh -ic "$2"; }
 
 echo "--- checks"
 export PATH="$HOME/bin:$HOME/.local/bin:$HOME/go/bin:$PATH"
+. /src/.bootstrap/versions.sh
 
 # --- repo
 check "dg status is clean" \
@@ -62,6 +63,25 @@ zcheck "d2sync is a function"   '[[ $(whence -w d2sync) == *function ]]'
 zcheck "PATH has ~/.local/bin"  '[[ :$PATH: == *:$HOME/.local/bin:* ]]'
 zcheck "EDITOR is nvim"         '[[ $EDITOR == nvim ]]'
 
+# --- 15-jj
+check "jj installed"           test -x "$HOME/.local/bin/jj"
+check "jj is $JJ_VERSION"      test "$("$HOME/.local/bin/jj" --version | awk '{print $2}' | cut -d- -f1)" = "${JJ_VERSION#v}"
+check "jj completion"          test -s "$HOME/.local/share/zsh/completions/_jj"
+check "jj user configured"     sh -c 'jj config get user.email | grep -q @'
+zcheck "jj completion on fpath" '(( $+functions[_jj] ))'
+check "watchman installed"     test -x /usr/local/bin/watchman
+wm_date=$(printf '%s' "${WATCHMAN_VERSION#v}" | cut -d. -f1-3 | tr -d .)
+check "watchman is $WATCHMAN_VERSION" sh -c "watchman --version | grep -q '^$wm_date'"
+check "watchman state dir"     test "$(stat -c %a /usr/local/var/run/watchman)" = 2777
+# watchman snapshots: touch a file in a fresh repo and wait for the snapshot op
+jjrepo=$(mktemp -d)
+watchman_out=$(cd "$jjrepo" && jj git init . >/dev/null 2>&1 && jj debug watchman status 2>&1)
+if grep -q -i 'running\|enabled' <<<"$watchman_out"; then ok "jj sees watchman"; else bad "jj sees watchman" "$watchman_out"; fi
+snap=$(cd "$jjrepo" && jj st >/dev/null 2>&1 && echo hi >file && for _ in $(seq 40); do
+  jj op log --no-graph -n 1 -T 'description' 2>/dev/null | grep -q -i snapshot && break; sleep 0.25; done
+  jj op log --no-graph -n 1 -T 'description' 2>&1)
+if grep -q -i snapshot <<<"$snap"; then ok "watchman triggers snapshots"; else bad "watchman triggers snapshots" "$snap"; fi
+
 # --- 20-tmux
 check "tmux-resurrect cloned" \
   test -f "$HOME/.local/share/tmux/plugins/tmux-resurrect/resurrect.tmux"
@@ -74,7 +94,6 @@ check "tmux resurrect bound"  sh -c 'tmux -L check list-keys | grep -q resurrect
 tmux -L check kill-server 2>/dev/null
 
 # --- 30-go, 40-go-tools
-. /src/.bootstrap/versions.sh
 check "go bootstrap present"   test -x "$HOME/d/go/bin/go"
 check "go bootstrap version"   test "$(head -1 "$HOME/d/go/VERSION")" = "$GO_BOOTSTRAP_VERSION"
 check "no ~/sdk"               test ! -e "$HOME/sdk"

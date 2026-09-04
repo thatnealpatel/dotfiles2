@@ -24,6 +24,8 @@ lists what it found and asks y/N. y moves it all to
 stages (.bootstrap/stages):
   05-tailscale apt repo and package; joins only with a key
   10-zsh       plugins, zoxide, login shell
+  15-jj        jujutsu and watchman from release archives; jj
+               snapshots on every file change; inotify limits
   20-tmux      tmux-resurrect
   30-go        pinned release as bootstrap, tip built at ~/w/go
   40-go-tools  go install from go-tools.txt
