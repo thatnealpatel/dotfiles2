@@ -3,17 +3,29 @@
 # in local.zsh.
 
 # personal tools
-export YAH_DEBUG=1
-export FINDINGS_CACHE_DIR="$HOME/.goof/db/findings"
-export GH_CACHE_DIR="$HOME/d/gh"
-export GERRIT_CACHE_DIR="$HOME/d/gerrit"
 export RFC_CACHE_DIR="$HOME/d/rfc"
 export WHATWG_CACHE_DIR="$HOME/d/whatwg"
 export OEIS_CACHE_DIR="$HOME/d/oeis"
 export WIKI_CACHE_DIR="$HOME/d/wiki"
 export ERDOS_CACHE_DIR="$HOME/d/erdos"
-export CVE_CACHE_DIR="$HOME/d/cve"
 export LEANDOC_DOT_LAKE="$HOME/p/proofs/.lake"
+
+# personal intranet
+export GRFA_PROXY="http://supermarket:9001"
+export GHFA_PROXY="http://gas-station:9001"
+export RETRIEVAL_HOST="http://supermarket:9001"
+
+# yah
+export YAH_DEBUG=1
+export YAH_IGNORED_PROVIDERS="Makora:OpenInference:Sail Research"
+
+# claude
+export CLAUDE_CODE_DISABLE_CRON=1
+export CLAUDE_CODE_DISABLE_ARTIFACT=1
+export CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1
+export CLAUDE_CODE_DISABLE_EXPLORE_PLAN_AGENTS=1
+export ENABLE_CLAUDEAI_MCP_SERVERS=false
+export CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS=1
 
 # zoxide: z DIR, zi for interactive. Replaces fasd.
 (( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
