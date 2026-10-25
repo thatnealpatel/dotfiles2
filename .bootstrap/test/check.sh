@@ -106,7 +106,10 @@ check "go bootstrap version"   test "$(head -1 "$HOME/d/go/VERSION")" = "$GO_BOO
 check "no ~/sdk"               test ! -e "$HOME/sdk"
 check "go is tip"              sh -c 'go version | grep -q devel'
 check "go fork remote"         sh -c 'git -C ~/w/go remote get-url fork | grep -q thatnealpatel'
+check "deadcode installed"     test -x "$HOME/go/bin/deadcode"
 check "gopls installed"        test -x "$HOME/go/bin/gopls"
+check "diffcov installed"      test -x "$HOME/go/bin/diffcov"
+check "uncover installed"      test -x "$HOME/go/bin/uncover"
 check "gopls runs"             gopls version
 
 # --- 50-neovim
