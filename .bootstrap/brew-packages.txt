@@ -1,0 +1,14 @@
+# Installed after checkout. Xcode Command Line Tools supply the compiler/make
+# (Debian's build-essential); macOS already ships unzip. No prebuilt Go/neovim.
+git
+curl
+ca-certificates
+zsh
+tmux
+fzf
+ripgrep
+cmake
+ninja
+gettext
+pkgconf
+opam

@@ -1,5 +1,5 @@
 ```
-curl -fsSL https://patel.codes/mk.sh | bash
+curl -fsSL https://patel.codes/mk.sh | bash -s -- --git-user="Not Neal Patel <bots@patel.codes>" [--no-tailscale]
 exec zsh
 ```
 

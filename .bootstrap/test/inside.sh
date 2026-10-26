@@ -19,8 +19,10 @@ export DOTFILES_REPO=/tmp/src DOTFILES_REF=main
 echo 'export ZSH=$HOME/.oh-my-zsh' >"$HOME/.zshrc"
 mkdir -p "$HOME/.oh-my-zsh/custom"
 
+args=(--git-user="Bootstrap Test <test@localhost>" -migrate)
+if [ "${BOOTSTRAP_NO_TAILSCALE:-0}" = 1 ]; then args+=(--no-tailscale); fi
 # shellcheck disable=SC2086
-bash /tmp/src/.bootstrap/bootstrap.sh -migrate ${STAGES:-}
+bash /tmp/src/.bootstrap/bootstrap.sh "${args[@]}" ${STAGES:-}
 
 echo
 echo "--- tracked files in \$HOME:"

@@ -9,6 +9,30 @@ warn() { printf '\033[1;33mwarn:\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# Standalone stages cannot trust an inherited platform override. Keep this
+# selection and Homebrew setup in sync with bootstrap.sh's streamed preflight.
+case "$(uname -s)/$(uname -m)" in
+  Linux/x86_64) BOOTSTRAP_OS=linux; GO_PLATFORM=linux-amd64; RUST_TARGET=x86_64-unknown-linux-musl ;;
+  Darwin/arm64) BOOTSTRAP_OS=darwin; GO_PLATFORM=darwin-arm64; RUST_TARGET=aarch64-apple-darwin ;;
+  *) die "unsupported platform $(uname -s)/$(uname -m); supported: linux/amd64 and darwin/arm64 (run natively, not under Rosetta)" ;;
+esac
+if [ "$BOOTSTRAP_OS" = darwin ]; then
+  export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+  have brew || die "Homebrew is required. Install it from https://brew.sh, then rerun bootstrap (expected /opt/homebrew/bin/brew)."
+  [ "$(id -u)" -ne 0 ] || die "run bootstrap as your normal user; Homebrew must not run as root"
+  xcode-select -p >/dev/null 2>&1 || die "Xcode Command Line Tools are required: run xcode-select --install, finish installation, then rerun bootstrap."
+else
+  [ -r /etc/os-release ] && . /etc/os-release
+  case ${ID:-} in
+    debian|ubuntu) ;;
+    *) die "targets Debian or Ubuntu on Linux, found ${PRETTY_NAME:-unknown}" ;;
+  esac
+fi
+
+cpu_count() {
+  if [ "$BOOTSTRAP_OS" = darwin ]; then sysctl -n hw.ncpu; else nproc; fi
+}
+
 # Run as root directly, or through sudo for a normal user.
 as_root() { if [ "$(id -u)" -eq 0 ]; then "$@"; else sudo "$@"; fi; }
 

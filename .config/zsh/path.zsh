@@ -5,6 +5,10 @@ export GOPATH="$HOME/go"
 export GOROOT_BOOTSTRAP="$HOME/d/go"
 
 typeset -U path   # no duplicates
+# Homebrew is not necessarily on PATH in a fresh macOS shell.
+if [[ $OSTYPE == darwin* ]]; then
+  path=(/opt/homebrew/bin /opt/homebrew/sbin $path)
+fi
 path=("$HOME/bin" "$HOME/.local/bin" $path "$GOPATH/bin")
 
 export VISUAL=nvim

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 05-tailscale: install tailscale from its apt repo; join the tailnet if a key
+# 05-tailscale: install via apt on Linux or Homebrew on macOS; join if a key
 # was given (bootstrap.sh -ts_authkey KEY, or $TS_AUTHKEY).
 #
 # On a real host tailscaled runs under systemd as usual. In a container with
@@ -8,9 +8,40 @@
 # hosts. That mode is for tests; use an ephemeral key so the node removes
 # itself.
 set -euo pipefail
+# The orchestrator exports this flag; standalone callers may also pass it or
+# set BOOTSTRAP_NO_TAILSCALE=1. Skip before sourcing helpers or probing commands.
+if [ "${BOOTSTRAP_NO_TAILSCALE:-0}" = 1 ] || [ "${1:-}" = --no-tailscale ]; then
+  printf '%s\n' 'Tailscale disabled (--no-tailscale)' >&2
+  exit 0
+fi
 . "$(dirname "$0")/../lib.sh"
 . "$(dirname "$0")/../versions.sh"
 log "stage 05-tailscale"
+
+if [ "$BOOTSTRAP_OS" = darwin ]; then
+  # Homebrew's CLI formula provides tailscale + tailscaled and a root launchd
+  # service. Do not mix this with the App Store/GUI variant or Linux daemons.
+  brew install tailscale
+  if tailscale status >/dev/null 2>&1; then
+    log "already on the tailnet: $(tailscale ip -4)"
+    exit 0
+  fi
+  as_root "$(command -v brew)" services start tailscale \
+    || die "could not start Tailscale; try sudo /opt/homebrew/bin/brew services start tailscale and approve macOS network access"
+  ready=0
+  for _ in {1..30}; do
+    if tailscale status --json >/dev/null 2>&1; then ready=1; break; fi
+    sleep 1
+  done
+  [ "$ready" = 1 ] || die "Tailscale service not ready; inspect sudo /opt/homebrew/bin/brew services info tailscale and approve macOS network access, then rerun"
+  if [ -z "${TS_AUTHKEY:-}" ]; then
+    log "no TS_AUTHKEY; service started but not joined. later: sudo /opt/homebrew/bin/tailscale up"
+  else
+    as_root tailscale up --auth-key="$TS_AUTHKEY"
+    log "tailscale: $(tailscale ip -4)"
+  fi
+  exit 0
+fi
 
 if ! have tailscale; then
   log "install tailscale"

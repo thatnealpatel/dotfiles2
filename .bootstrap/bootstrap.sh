@@ -1,15 +1,25 @@
 #!/usr/bin/env bash
-# Bootstrap a fresh Debian 13 or Ubuntu 24.04 x86_64 host into the full environment.
+# Bootstrap Debian/Ubuntu x86_64 or macOS Apple Silicon into the full environment.
 #
-#   curl -fsSL https://raw.githubusercontent.com/thatnealpatel/dotfiles2/main/.bootstrap/bootstrap.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/thatnealpatel/dotfiles2/main/.bootstrap/bootstrap.sh | bash -s -- --git-user="Name <you@example.com>"
 #
 # Re-runnable. With stage names, runs only those:
-#   ~/.bootstrap/bootstrap.sh 30-go 50-neovim
+#   ~/.bootstrap/bootstrap.sh --git-user="Name <you@example.com>" 30-go 50-neovim
 #
 # Flags:
 #   -ts_authkey KEY  join the tailnet with this auth key (stage 05-tailscale).
 #                    Also read from $TS_AUTHKEY. Via curl: bash -s -- -ts_authkey KEY
 #   -migrate         move a previous setup aside without asking (see migrate_existing)
+#   --no-tailscale   skip all Tailscale installation, service and authentication work
+#   --git-user      required identity: "Name <you@example.com>" (Git and jj)
+#
+# macOS prerequisites: native Apple Silicon shell, Homebrew from https://brew.sh
+# installed at /opt/homebrew, Xcode Command Line Tools (xcode-select --install).
+# Homebrew is never installed unattended. Go tip and pinned Neovim are still
+# built from source. Tailscale uses the Homebrew CLI formula and root launchd
+# service, not the GUI app; macOS may ask you to approve VPN/network access.
+# Watchman/fsmonitor is not installed or enabled; old host installations and
+# system settings are not removed.
 #
 # Overrides, used by .bootstrap/test/run.sh:
 #   DOTFILES_REPO  clone source          (default: github https url)
@@ -18,6 +28,8 @@ set -euo pipefail
 
 TS_AUTHKEY="${TS_AUTHKEY:-}"
 MIGRATE=0
+BOOTSTRAP_NO_TAILSCALE=0
+GIT_USER=
 stages=()
 while [ $# -gt 0 ]; do
   case $1 in
@@ -25,13 +37,21 @@ while [ $# -gt 0 ]; do
                    TS_AUTHKEY=$2; shift 2 ;;
     -ts_authkey=*) TS_AUTHKEY=${1#*=}; shift ;;
     -migrate)      MIGRATE=1; shift ;;
-    -h|--help)     sed -n '2,16p' "$0" 2>/dev/null; exit 0 ;;
+    --git-user)   [ $# -ge 2 ] || { echo '--git-user needs "Name <you@example.com>"' >&2; exit 2; }
+                   GIT_USER=$2; shift 2 ;;
+    --git-user=*) GIT_USER=${1#*=}; shift ;;
+    --no-tailscale) BOOTSTRAP_NO_TAILSCALE=1; shift ;;
+    -h|--help)     printf '%s\n' \
+      'Usage: bootstrap.sh --git-user="Name <you@example.com>" [-migrate] [--no-tailscale] [-ts_authkey KEY] [stage...]' \
+      'Supported: Debian/Ubuntu linux/amd64, native macOS darwin/arm64.' \
+      'macOS requires Homebrew (https://brew.sh, /opt/homebrew) and Xcode Command Line Tools (xcode-select --install).' \
+      '--no-tailscale skips all Tailscale dependencies, service and authentication work.'; exit 0 ;;
     -*)            echo "unknown flag: $1" >&2; exit 2 ;;
     *)             stages+=("$1"); shift ;;
   esac
 done
-export TS_AUTHKEY
-set -- "${stages[@]}"
+export TS_AUTHKEY BOOTSTRAP_NO_TAILSCALE
+set -- ${stages[@]+"${stages[@]}"}
 
 export DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/thatnealpatel/dotfiles2.git}"
 export DOTFILES_PUSH="${DOTFILES_PUSH:-git@github.com:thatnealpatel/dotfiles2.git}"
@@ -45,19 +65,46 @@ log()     { printf '\033[1;34m==>\033[0m %s\n' "$*" >&2; }
 die()     { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 as_root() { if [ "$(id -u)" -eq 0 ]; then "$@"; else sudo "$@"; fi; }
 
+# This must work before checkout (curl | bash). Keep platform selection and
+# Homebrew PATH setup in sync with lib.sh, which serves standalone stages.
 preflight() {
+  case "$(uname -s)/$(uname -m)" in
+    Linux/x86_64) BOOTSTRAP_OS=linux ;;
+    Darwin/arm64) BOOTSTRAP_OS=darwin ;;
+    *) die "unsupported platform $(uname -s)/$(uname -m); supported: linux/amd64 and darwin/arm64 (run natively, not under Rosetta)" ;;
+  esac
+  if [ "$BOOTSTRAP_OS" = darwin ]; then
+    export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+    command -v brew >/dev/null || die "Homebrew is required. Install it from https://brew.sh, then rerun bootstrap (expected /opt/homebrew/bin/brew)."
+    [ "$(id -u)" -ne 0 ] || die "run bootstrap as your normal user; Homebrew must not run as root"
+    xcode-select -p >/dev/null 2>&1 || die "Xcode Command Line Tools are required: run xcode-select --install, finish installation, then rerun bootstrap."
+    return
+  fi
   [ -r /etc/os-release ] && . /etc/os-release
   case ${ID:-} in
     debian|ubuntu) ;;
-    *) die "targets Debian or Ubuntu, found ${PRETTY_NAME:-unknown}" ;;
+    *) die "targets Debian or Ubuntu on Linux, found ${PRETTY_NAME:-unknown}" ;;
   esac
-  [ "$(uname -m)" = x86_64 ] || die "targets x86_64, found $(uname -m)"
   if [ "$(id -u)" -ne 0 ]; then
     command -v sudo >/dev/null || die "sudo is required for a non-root user"
     # stdin may be the script itself (curl | bash); prompt on the tty.
     if [ -r /dev/tty ]; then sudo -v </dev/tty; else sudo -n true; fi \
       || die "sudo access is required"
   fi
+}
+
+# Resolve symlinks without GNU readlink -f (not shipped on older macOS).
+resolve_path() {
+  local p=$1 target n=0
+  while :; do
+    p=$(cd -P "$(dirname "$p")" && printf '%s/%s' "$PWD" "$(basename "$p")") || return
+    [ -L "$p" ] || break
+    n=$((n + 1))
+    [ "$n" -le 40 ] || return 1
+    target=$(readlink "$p") || return
+    case $target in /*) p=$target ;; *) p="$(dirname "$p")/$target" ;; esac
+  done
+  printf '%s\n' "$p"
 }
 
 # Traces of a previous setup that this layout supersedes. If any exist, list
@@ -72,7 +119,7 @@ migrate_existing() {
   done
   for f in "$HOME"/.zcompdump*; do [ -e "$f" ] && found+=("${f#"$HOME"/}"); done
   # an nvim in ~/bin that is not ours shadows the build (~/bin is first on PATH)
-  if [ -e "$HOME/bin/nvim" ] && [[ $(readlink -f "$HOME/bin/nvim") != "$HOME/.local/nvim/"* ]]; then
+  if [ -e "$HOME/bin/nvim" ] && [[ $(resolve_path "$HOME/bin/nvim") != "$HOME/.local/nvim/"* ]]; then
     found+=(bin/nvim)
   fi
   # a bare repo from before this layout, recognisable by having no .bootstrap
@@ -103,6 +150,10 @@ migrate_existing() {
 
 base_packages() {
   log "base packages"
+  if [ "$BOOTSTRAP_OS" = darwin ]; then
+    brew install git curl ca-certificates zsh
+    return
+  fi
   as_root env DEBIAN_FRONTEND=noninteractive apt-get update -qq
   as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     --no-install-recommends git curl ca-certificates zsh >/dev/null
@@ -147,8 +198,13 @@ scaffold_home() {
 run_stages() {
   . "$BOOTSTRAP_DIR/lib.sh"
   . "$BOOTSTRAP_DIR/versions.sh"
-  # shellcheck disable=SC2046
-  apt_install $(sed 's/#.*//' "$BOOTSTRAP_DIR/apt-packages.txt")
+  if [ "$BOOTSTRAP_OS" = darwin ]; then
+    # shellcheck disable=SC2046
+    brew install $(sed 's/#.*//' "$BOOTSTRAP_DIR/brew-packages.txt")
+  else
+    # shellcheck disable=SC2046
+    apt_install $(sed 's/#.*//' "$BOOTSTRAP_DIR/apt-packages.txt")
+  fi
   local s name
   for s in "$BOOTSTRAP_DIR"/stages/*.sh; do
     name=$(basename "$s" .sh)
@@ -162,7 +218,45 @@ run_stages() {
   done
 }
 
+validate_identity() {
+  local pattern='^(.+)[[:space:]]<([^<>[:space:]]+@[^<>[:space:]]+)>$'
+  [ -n "$GIT_USER" ] || die '--git-user="Name <you@example.com>" is required'
+  [[ $GIT_USER != *[[:cntrl:]]* && $GIT_USER =~ $pattern ]] \
+    || die 'invalid --git-user; expected "Name <you@example.com>" without control characters'
+  GIT_USER_NAME=${BASH_REMATCH[1]}
+  GIT_USER_EMAIL=${BASH_REMATCH[2]}
+  GIT_USER_NAME=${GIT_USER_NAME#"${GIT_USER_NAME%%[![:space:]]*}"}
+  GIT_USER_NAME=${GIT_USER_NAME%"${GIT_USER_NAME##*[![:space:]]}"}
+  [ -n "$GIT_USER_NAME" ] || die '--git-user name must not be empty'
+}
+
+# TOML basic strings: controls were rejected by validate_identity, so only
+# backslash and double quote need escaping. No eval or external serializer.
+toml_string() {
+  local s=$1
+  s=${s//\\/\\\\}
+  s=${s//\"/\\\"}
+  printf '"%s"' "$s"
+}
+
+configure_identity() {
+  git config --global user.name "$GIT_USER_NAME"
+  git config --global user.email "$GIT_USER_EMAIL"
+  # A separate user file works even when stage selection skips the jj binary.
+  # Keep host-specific settings elsewhere; only this managed file is replaced.
+  local conf="${XDG_CONFIG_HOME:-$HOME/.config}/jj/conf.d"
+  mkdir -p "$conf"
+  {
+    printf '# Managed by bootstrap --git-user.\n[user]\nname = '
+    toml_string "$GIT_USER_NAME"
+    printf '\nemail = '
+    toml_string "$GIT_USER_EMAIL"
+    printf '\n'
+  } >"$conf/99-bootstrap-user.toml"
+}
+
 main() {
+  validate_identity
   cd "$HOME"   # git paths below are relative to the work tree
   preflight
   migrate_existing
@@ -176,6 +270,7 @@ main() {
   else
     log "repo present at $DOTFILES_DIR; skipping clone and checkout"
   fi
+  configure_identity
   scaffold_home
   run_stages "$@"
   log "done. start a new shell: exec zsh"

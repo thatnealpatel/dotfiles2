@@ -34,8 +34,12 @@ check "backup holds them"          sh -c 'ls -d ~/.dotfiles-backup/*/.zshrc ~/.d
 check "~/d ~/p ~/w ~/t ~/s exist" test -d ~/d -a -d ~/p -a -d ~/w -a -d ~/t -a -d ~/s
 
 # --- 05-tailscale
-check "tailscale installed"     command -v tailscale
-if [ -n "${TS_AUTHKEY:-}" ]; then
+if [ "${BOOTSTRAP_NO_TAILSCALE:-0}" = 1 ]; then
+  check "tailscale skipped" sh -c '! command -v tailscale'
+else
+  check "tailscale installed" command -v tailscale
+fi
+if [ "${BOOTSTRAP_NO_TAILSCALE:-0}" != 1 ] && [ -n "${TS_AUTHKEY:-}" ]; then
   ts="tailscale --socket=$HOME/.local/state/tailscale/tailscaled.sock"
   check "tailscale has an ip"     sh -c "$ts ip -4 | grep -q '^100\.'"
   check "tailscale is running"    sh -c "$ts status --json | grep -q '\"BackendState\": *\"Running\"'"
@@ -73,18 +77,9 @@ check "jj is $JJ_VERSION"      test "$("$HOME/.local/bin/jj" --version | awk '{p
 check "jj completion"          test -s "$HOME/.local/share/zsh/completions/_jj"
 check "jj user configured"     sh -c 'jj config get user.email | grep -q @'
 zcheck "jj completion on fpath" '(( $+functions[_jj] ))'
-check "watchman installed"     test -x /usr/local/bin/watchman
-wm_date=$(printf '%s' "${WATCHMAN_VERSION#v}" | cut -d. -f1-3 | tr -d .)
-check "watchman is $WATCHMAN_VERSION" sh -c "watchman --version | grep -q '^$wm_date'"
-check "watchman state dir"     test "$(stat -c %a /usr/local/var/run/watchman)" = 2777
-# watchman snapshots: touch a file in a fresh repo and wait for the snapshot op
-jjrepo=$(mktemp -d)
-watchman_out=$(cd "$jjrepo" && jj git init . >/dev/null 2>&1 && jj debug watchman status 2>&1)
-if grep -q -i 'running\|enabled' <<<"$watchman_out"; then ok "jj sees watchman"; else bad "jj sees watchman" "$watchman_out"; fi
-snap=$(cd "$jjrepo" && jj st >/dev/null 2>&1 && echo hi >file && for _ in $(seq 40); do
-  jj op log --no-graph -n 1 -T 'description' 2>/dev/null | grep -q -i snapshot && break; sleep 0.25; done
-  jj op log --no-graph -n 1 -T 'description' 2>&1)
-if grep -q -i snapshot <<<"$snap"; then ok "watchman triggers snapshots"; else bad "watchman triggers snapshots" "$snap"; fi
+check "jj name configured" test "$(jj config get user.name)" = "$(git config --global user.name)"
+check "jj email configured" test "$(jj config get user.email)" = "$(git config --global user.email)"
+check "jj fsmonitor disabled" test "$(jj config get fsmonitor.backend)" = none
 
 # --- 20-tmux
 check "tmux-resurrect cloned" \

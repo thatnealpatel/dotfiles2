@@ -1,12 +1,11 @@
 # shellcheck shell=bash
 # Version pins. Bump here, then re-run the matching stage:
-#   ~/.bootstrap/bootstrap.sh 50-neovim
+#   ~/.bootstrap/bootstrap.sh --git-user="Name <you@example.com>" 50-neovim
 
 NVIM_VERSION=v0.12.5           # https://github.com/neovim/neovim/releases
 GO_BOOTSTRAP_VERSION=go1.27.1  # https://go.dev/dl ; only used to build tip
 ZOXIDE_VERSION=v0.10.0         # https://github.com/ajeetdsouza/zoxide/releases
 JJ_VERSION=v0.45.1             # https://github.com/jj-vcs/jj/releases
-WATCHMAN_VERSION=v2026.07.27.00  # https://github.com/facebook/watchman/releases ; pick a tag that has a linux.zip
 
 # Optional tool managers, 0 or 1. opam and elan are always installed.
 INSTALL_GCLOUD=0

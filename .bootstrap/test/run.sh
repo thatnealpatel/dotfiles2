@@ -4,6 +4,7 @@
 #   .bootstrap/test/run.sh                 debian 13, all stages, then checks
 #   .bootstrap/test/run.sh -os ubuntu      ubuntu 24.04 instead
 #   .bootstrap/test/run.sh 50-neovim       named stages only
+#   .bootstrap/test/run.sh --no-tailscale   skip Tailscale entirely
 #   .bootstrap/test/run.sh -i              ...then drop into zsh inside the container
 #   .bootstrap/test/run.sh -i -ts_authkey tskey-auth-...
 #                                          ...and join the tailnet (use an ephemeral key)
@@ -20,10 +21,12 @@
 set -euo pipefail
 
 interactive=0
+no_tailscale=0
 os=debian
 stages=()
 while [ $# -gt 0 ]; do
   case $1 in
+    --no-tailscale) no_tailscale=1; shift ;;
     -i)            interactive=1; shift ;;
     -os)           os=$2; shift 2 ;;
     -os=*)         os=${1#*=}; shift ;;
@@ -59,6 +62,7 @@ docker run --rm "${tty[@]}" \
   -v "dotfiles2-test-w-$os:/home/neal/w" \
   -v "dotfiles2-test-go-$os:/home/neal/go" \
   -e STAGES="${stages[*]:-}" \
+  -e BOOTSTRAP_NO_TAILSCALE="$no_tailscale" \
   -e TS_AUTHKEY="${TS_AUTHKEY:-}" \
   -e SHELL_AFTER="$interactive" \
   "$image" bash /src/.bootstrap/test/inside.sh

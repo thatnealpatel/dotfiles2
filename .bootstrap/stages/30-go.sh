@@ -23,7 +23,7 @@ if [ ! -x "$boot/bin/go" ] || [ "$(head -1 "$boot/VERSION" 2>/dev/null)" != "$GO
   log "go $GO_BOOTSTRAP_VERSION -> $boot"
   rm -rf "$boot"
   mkdir -p "$boot"
-  curl -fsSL --retry 3 "https://go.dev/dl/$GO_BOOTSTRAP_VERSION.linux-amd64.tar.gz" \
+  curl -fsSL --retry 3 "https://go.dev/dl/$GO_BOOTSTRAP_VERSION.$GO_PLATFORM.tar.gz" \
     | tar -C "$boot" --strip-components=1 -xzf -
 fi
 

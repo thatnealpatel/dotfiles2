@@ -5,13 +5,22 @@
 # here; a tracked file changed in $HOME makes the pull refuse, on purpose.
 d2sync() {
   git --git-dir="$HOME/.dotfiles" --work-tree="$HOME" pull --ff-only || return
-  if (( $# )); then "$HOME/.bootstrap/bootstrap.sh" "$@"; fi
+  if (( $# )); then
+    local name email
+    name=$(git config --global user.name) || return
+    email=$(git config --global user.email) || return
+    "$HOME/.bootstrap/bootstrap.sh" --git-user="$name <$email>" "$@"
+  fi
 }
 
 alias gs='git status'
 alias gc='git commit'
 
-alias ls='ls --color=auto'
+if [[ $OSTYPE == darwin* ]]; then
+  alias ls='ls -G'
+else
+  alias ls='ls --color=auto'
+fi
 alias la='ls -la'
 
 # extract FILE...: unpack by extension into the current directory.

@@ -26,9 +26,10 @@ else
     curl -fsSL --retry 3 "https://github.com/neovim/neovim/archive/refs/tags/$ver.tar.gz" \
       | tar -C "$srcroot" -xzf -
   fi
-  log "build neovim $ver ($(nproc) jobs, log: $logfile)"
+  jobs=$(cpu_count)
+  log "build neovim $ver ($jobs jobs, log: $logfile)"
   if ! ( cd "$src" \
-         && make CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX="$prefix" -j"$(nproc)" \
+         && make CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX="$prefix" -j"$jobs" \
          && make install ) >"$logfile" 2>&1; then
     tail -n 40 "$logfile" >&2
     die "neovim build failed, full log: $logfile"
@@ -39,6 +40,6 @@ link "$prefix/bin/nvim" "$HOME/.local/bin/nvim"
 log "nvim -> $("$HOME/.local/bin/nvim" --version | head -1)"
 
 # ~/bin precedes ~/.local/bin on PATH; a stale nvim there shadows this build
-if [ -e "$HOME/bin/nvim" ] && [ "$(readlink -f "$HOME/bin/nvim")" != "$(readlink -f "$prefix/bin/nvim")" ]; then
+if [ -e "$HOME/bin/nvim" ] && [ ! "$HOME/bin/nvim" -ef "$prefix/bin/nvim" ]; then
   warn "$HOME/bin/nvim shadows the new build; remove it"
 fi
